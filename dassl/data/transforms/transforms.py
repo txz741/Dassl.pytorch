@@ -14,7 +14,7 @@ from .autoaugment import SVHNPolicy, CIFAR10Policy, ImageNetPolicy
 from .randaugment import RandAugment, RandAugment2, RandAugmentFixMatch
 
 from .tps_warp import _get_regular_grid, _generate_random_vectors, tps_warp_2
-import torch.nn.functional as F
+# import torch.nn.functional as F
 
 AVAI_CHOICES = [
     "random_flip",
