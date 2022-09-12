@@ -1,0 +1,82 @@
+{
+    // 使用 IntelliSense 了解相关属性。 
+    // 悬停以查看现有属性的描述。
+    // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "office31",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": [
+                "--root",
+                "/home/ljw/datasets",
+                "--trainer",
+                "SourceOnly",
+                "--source-domains",
+                "amazon",
+                "--target-domains",
+                "webcam",
+                "--dataset-config-file",
+                "configs/datasets/da/office31.yaml",
+                "--config-file",
+                "configs/trainers/da/source_only/office31.yaml",
+                "--output-dir",
+                "output/source_only_office31",
+            ]
+        },
+        {
+            "name": "pacs",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": [
+                "--root",
+                "/home/ljw/datasets",
+                "--trainer",
+                "SourceOnly",
+                "--source-domains",
+                "amazon",
+                "--target-domains",
+                "webcam",
+                "--dataset-config-file",
+                "configs/datasets/da/office31.yaml",
+                "--config-file",
+                "configs/trainers/da/source_only/office31.yaml",
+                "--output-dir",
+                "output/source_only_office31",
+            ]
+        },
+        {
+            "name": "pacs_myresnet",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": [
+                "--root",
+                "/home/ljw/datasets",
+                "--trainer",
+                "Vanilla",
+                "--source-domains",
+                "photo", "cartoon", "art_painting", 
+                "--target-domains",
+                "sketch",
+                "--dataset-config-file",
+                "/home/ljw/DA_DG/Dassl.pytorch/configs/datasets/dg/pacs.yaml",
+                "--config-file",
+                "configs/trainers/dg/vanilla/pacs.yaml",
+                "--output-dir",
+                "output/pacs/Vanilla2/myresnet18/random/sketch/seed1",
+                "--backbone",
+                "myresnet18",
+            ]
+        },
+    ]
+}

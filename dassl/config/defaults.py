@@ -91,7 +91,7 @@ _C.DATASET.ALL_AS_UNLABELED = False
 # Dataloader
 ###########################
 _C.DATALOADER = CN()
-_C.DATALOADER.NUM_WORKERS = 4
+_C.DATALOADER.NUM_WORKERS = 0
 # Apply transformations to an image K times (during training)
 _C.DATALOADER.K_TRANSFORMS = 1
 # img0 denotes image tensor without augmentation

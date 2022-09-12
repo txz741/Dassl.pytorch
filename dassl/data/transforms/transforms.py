@@ -1,6 +1,7 @@
 import numpy as np
 import random
 import torch
+from PIL import Image
 import torchvision.transforms.functional as F
 from torchvision.transforms import (
     Resize, Compose, ToTensor, Normalize, CenterCrop, RandomCrop, ColorJitter,
@@ -11,6 +12,9 @@ from torchvision.transforms.functional import InterpolationMode
 
 from .autoaugment import SVHNPolicy, CIFAR10Policy, ImageNetPolicy
 from .randaugment import RandAugment, RandAugment2, RandAugmentFixMatch
+
+from .tps_warp import _get_regular_grid, _generate_random_vectors, tps_warp_2
+import torch.nn.functional as F
 
 AVAI_CHOICES = [
     "random_flip",
@@ -234,6 +238,25 @@ def _build_transform_train(cfg, choices, target_size, normalize):
             RandomResizedCrop(input_size, scale=s_, interpolation=interp_mode)
         ]
 
+    if 'TPS' in choices:
+        print('+ TPS')
+        tfm_train += [TPS(cfg.INPUT.SIZE, cfg.INPUT.S)]
+        # if a < 0.5:
+        #     tfm_train += [TPS(cfg.INPUT.SIZE)]
+        # else:
+        #     tfm_train += [TPS2(cfg.INPUT.SIZE)]
+    if 'Lin' in choices:
+        print('+ Lin')
+        tfm_train += [MyLinear]
+    
+    if 'affine' in choices:
+        print('+affine')
+        tfm_train += [transforms.RandomAffine(degrees=20, scale=(0.5, 1.5), shear=(-10, 10, -10, 10))]
+
+    if 'fisheye' in choices:
+        print('+fisheye')
+        tfm_train+= [FishEye()]
+
     if "random_flip" in choices:
         print("+ random flip")
         tfm_train += [RandomHorizontalFlip()]
@@ -352,3 +375,128 @@ def _build_transform_test(cfg, choices, target_size, normalize):
     tfm_test = Compose(tfm_test)
 
     return tfm_test
+
+import torchvision.transforms as transforms
+
+# 这种写法可能导致所有图片都扭曲或所有图片都不扭曲，缺乏随机性
+# class TPS:
+
+#     def __init__(self, size):
+#         self.w, self.h = size
+#         self.apply_tps = random.random() < 0.5
+#         self.src = _get_regular_grid(size, points_per_dim=5)
+#         self.dst = _generate_random_vectors(self.src, scale=0.4 * self.w)
+#         self.params = {
+#             'src': self.src,
+#             'dst': self.dst,
+#             'apply_tps': self.apply_tps
+#         }
+
+#     def _apply_tps(self, img):
+#         new_im = img
+#         if self.params['apply_tps']:
+#             np_im = np.array(img)
+#             np_im = tps_warp_2(np_im, self.params['dst'], self.params['src'])
+#             new_im = Image.fromarray(np_im)
+#         return new_im
+
+#     def __call__(self, img):
+#         tps_tfm = transforms.Lambda(lambda img: self._apply_tps(img))
+#         return tps_tfm(img)
+
+# 可能也缺少随机性
+class TPS:
+
+    def __init__(self, size, s=0.04):
+        self.w, self.h = size
+        self.src = _get_regular_grid(size, points_per_dim=5)
+        self.dst = _generate_random_vectors(self.src, scale=s * self.w)
+        self.params = {
+            'src': self.src,
+            'dst': self.dst,
+        }
+
+    def _apply_tps(self, img):
+        new_im = img
+        np_im = np.array(img)
+        np_im = tps_warp_2(np_im, self.params['dst'], self.params['src'])
+        new_im = Image.fromarray(np_im)
+        return new_im
+
+    def __call__(self, img):
+        if random.random() < 0.5:
+            tps_tfm = transforms.Lambda(lambda img: self._apply_tps(img))
+            return tps_tfm(img)
+        else:
+            return img
+
+# class TPS2(torch.nn.Module):
+
+#     def __init__(self, size):
+#         super().__init__()
+#         self.w, self.h = size
+#         self.src = _get_regular_grid(size, points_per_dim=5)
+#         self.dst = _generate_random_vectors(self.src, scale=0.4 * self.w)
+#         self.params = {
+#             'src': self.src,
+#             'dst': self.dst,
+#         }
+
+#     def _apply_tps(self, img):
+#         new_im = img
+#         np_im = np.array(img)
+#         np_im = tps_warp_2(np_im, self.params['dst'], self.params['src'])
+#         new_im = Image.fromarray(np_im)
+#         return new_im
+
+#     def forward(self, img):
+#         if torch.rand(1) < 0.5:
+#             tps_tfm = transforms.Lambda(lambda img: self._apply_tps(img))
+#             return tps_tfm(img)
+#         else:
+#             return img
+
+
+class MyLinear:
+
+    def __init__(self):
+        self.a = float(np.random.rand(1) + 0.5)
+        self.b = float(np.random.rand(1) - 0.5)
+        self.d = float(np.random.rand(1) - 0.5)
+        self.e = float(np.random.rand(1) + 0.5)
+        self.theta = torch.Tensor([[self.a, self.b, 0], [self.d, self.e,
+                                                         0]]).unsqueeze(dim=0)
+
+    def __call__(self, img):
+        if random.random() < 0.5:
+            img = transforms.ToTensor()(img).unsqueeze(0)
+            grid = F.affine_grid(self.theta, size=img.shape)
+            output = F.grid_sample(img, grid)
+            output = transforms.ToPILImage()(output[0]).convert('RGB')
+            return output
+        else:
+            return img
+
+
+class FishEye:
+
+    def __init__(self, magnitude=0.25):
+        self.magnitude = magnitude
+        self.center = torch.tensor([0.0])
+
+    def __call__(self, img):
+        if random.random() < 0.5:
+            img = transforms.ToTensor()(img).unsqueeze(0)
+            N, C, H, W = img.shape
+            xx, yy = torch.linspace(-1, 1, W), torch.linspace(-1, 1, H)
+            gridy, gridx = torch.meshgrid(yy, xx)
+            grid = torch.stack([gridx, gridy], dim=-1)
+            d = self.center - grid
+            d_sum = torch.sqrt((d**2).sum(axis=-1))
+            grid += d * d_sum.unsqueeze(-1) * self.magnitude
+            grid = grid.unsqueeze(0)
+            output = F.grid_sample(img, grid, align_corners=True)
+            output = transforms.ToPILImage()(output[0]).convert('RGB')
+            return output
+        else:
+            return img

@@ -10,6 +10,13 @@ from .resnet import (
     resnet50_efdmix_l12, resnet101_efdmix_l1, resnet18_efdmix_l123,
     resnet50_efdmix_l123, resnet101_efdmix_l12, resnet101_efdmix_l123
 )
+
+from .myresnet import (
+    myresnet18, myresnet34, myresnet50, myresnet101, myresnet152, myresnet18_ms_l1,
+    myresnet50_ms_l1, myresnet18_ms_l12, myresnet50_ms_l12, myresnet101_ms_l1,
+    myresnet18_ms_l123, myresnet50_ms_l123, myresnet101_ms_l12, myresnet101_ms_l123
+)
+
 from .alexnet import alexnet
 from .wide_resnet import wide_resnet_16_4, wide_resnet_28_2
 from .cnn_digitsdg import cnn_digitsdg
