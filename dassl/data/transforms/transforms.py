@@ -35,6 +35,10 @@ AVAI_CHOICES = [
     "colorjitter",
     "randomgrayscale",
     "gaussian_blur",
+    "TPS",
+    "Lin",
+    "affine",
+    "fisheye"
 ]
 
 INTERPOLATION_MODES = {

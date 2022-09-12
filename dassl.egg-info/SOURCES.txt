@@ -1,0 +1,9 @@
+LICENSE
+README.md
+setup.py
+dassl/__init__.py
+dassl.egg-info/PKG-INFO
+dassl.egg-info/SOURCES.txt
+dassl.egg-info/dependency_links.txt
+dassl.egg-info/requires.txt
+dassl.egg-info/top_level.txt
